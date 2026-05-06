@@ -18,6 +18,8 @@ console = Console()
 
 
 def _init() -> None:
+    from dotenv import load_dotenv
+    load_dotenv()
     settings = get_settings()
     configure_logging(settings.log_level)
 
@@ -31,11 +33,19 @@ def baseline(
     _init()
     request = ResearchQuery(query=query)
     state = ResearchState(request=request)
-    state.final_answer = (
-        "Baseline skeleton response. TODO(student): replace this with a real single-agent "
-        "implementation and record latency/cost/quality metrics."
-    )
-    console.print(Panel.fit(state.final_answer, title="Single-Agent Baseline"))
+    from multi_agent_research_lab.evaluation.benchmark import run_benchmark
+    from multi_agent_research_lab.services.llm_client import LLMClient
+    
+    def runner(q: str) -> ResearchState:
+        s = ResearchState(request=ResearchQuery(query=q))
+        llm = LLMClient()
+        response = llm.complete("You are a helpful assistant.", f"Answer the query: {q}")
+        s.final_answer = response.content
+        return s
+
+    state, metrics = run_benchmark("baseline", query, runner)
+    
+    console.print(Panel.fit(state.final_answer or "", title=f"Single-Agent Baseline (Latency: {metrics.latency_seconds:.2f}s)"))
 
 
 @app.command("multi-agent")
@@ -45,10 +55,16 @@ def multi_agent(
     """Run the multi-agent workflow skeleton."""
 
     _init()
-    state = ResearchState(request=ResearchQuery(query=query))
-    workflow = MultiAgentWorkflow()
+    from multi_agent_research_lab.evaluation.benchmark import run_benchmark
+    
+    def runner(q: str) -> ResearchState:
+        s = ResearchState(request=ResearchQuery(query=q))
+        w = MultiAgentWorkflow()
+        return w.run(s)
+
     try:
-        result = workflow.run(state)
+        result, metrics = run_benchmark("multi_agent", query, runner)
+        console.print(f"Latency: {metrics.latency_seconds:.2f}s, Estimated Cost: ${metrics.estimated_cost_usd:.4f}")
     except StudentTodoError as exc:
         console.print(Panel.fit(str(exc), title="Expected TODO", style="yellow"))
         raise typer.Exit(code=2) from exc

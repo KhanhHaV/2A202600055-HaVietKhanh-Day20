@@ -12,10 +12,11 @@ from typing import Any
 
 @contextmanager
 def trace_span(name: str, attributes: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
-    """Minimal span context used by the skeleton.
-
-    TODO(student): Replace or augment with LangSmith/Langfuse provider spans.
-    """
+    """Initialize observability tools."""
+    import os
+    if os.getenv("LANGSMITH_API_KEY"):
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGSMITH_PROJECT", "multi-agent-research-lab")
 
     started = perf_counter()
     span: dict[str, Any] = {"name": name, "attributes": attributes or {}, "duration_seconds": None}

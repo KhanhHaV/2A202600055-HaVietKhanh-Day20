@@ -5,8 +5,8 @@ from multi_agent_research_lab.core.schemas import BenchmarkMetrics
 
 def render_markdown_report(metrics: list[BenchmarkMetrics]) -> str:
     """Render benchmark metrics to markdown.
-
-    TODO(student): Add richer analysis, examples, screenshots, and trace links.
+    
+    Provides a simple table summarizing the runs.
     """
 
     lines = ["# Benchmark Report", "", "| Run | Latency (s) | Cost (USD) | Quality | Notes |", "|---|---:|---:|---:|---|"]
